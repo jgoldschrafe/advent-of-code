@@ -1,25 +1,22 @@
 use std::io;
-use std::io::prelude::*;
 
-fn patch(program: &mut Vec<i32>) {
-    program[1] = 12;
-    program[2] = 2;
-}
-
-fn run(program: &mut Vec<i32>) {
+fn run(program: &mut Vec<i32>) -> Result<i32, &str> {
+    let size = program.len();
     let mut pc = 0;
 
     loop {
-        // We can have an opcode 99 as the last location in the program,
-        // with no data after it. Exit early if we see it.
         let opcode = program[pc];
         if opcode == 99 {
-            return;
+            return Ok(program[0]);
         }
 
         let ax = program[pc + 1] as usize;
         let bx = program[pc + 2] as usize;
         let dest = program[pc + 3] as usize;
+
+        if ax > size || bx > size || dest > size {
+            return Err("out of bounds");
+        }
 
         program[dest] = match opcode {
             1 => program[ax] + program[bx],
@@ -40,8 +37,17 @@ fn main() {
         .map(|s| s.parse().unwrap())
         .collect();
 
-    patch(&mut program);
-    run(&mut program);
+    for noun in 0..=99 {
+        for verb in 0..=99 {
+            let mut patched = program.clone();
+            patched[1] = noun;
+            patched[2] = verb;
 
-    println!("{:?}", program[0]);
+            if let Ok(result @ 19690720) = run(&mut patched) {
+                let total = 100 * noun + verb;
+                println!("{}", total);
+                return;
+            }
+        }
+    }
 }
