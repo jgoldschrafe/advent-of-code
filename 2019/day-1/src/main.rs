@@ -12,7 +12,7 @@ fn required_fuel(mass: i32) -> i32 {
 fn main() {
     let module_mass: Vec<i32> = io::stdin().lock()
         .lines()
-        .map(|line| line.unwrap().parse::<i32>().unwrap())
+        .map(|line| line.unwrap().parse().unwrap())
         .collect();
 
     let module_fuel: Vec<i32> = module_mass.into_iter()
