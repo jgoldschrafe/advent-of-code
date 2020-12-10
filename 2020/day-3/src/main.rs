@@ -32,8 +32,8 @@ fn main() {
         .map(|line| parse_tree_mask(&line.unwrap()))
         .collect();
 
-    let slope_reciprocals = vec![(1, 1), (1, 3), (1, 5), (1, 7), (2, 1)];
-    let result: i64 = slope_reciprocals.iter()
+    let slopes = vec![(1, 1), (1, 3), (1, 5), (1, 7), (2, 1)];
+    let result: i64 = slopes.iter()
         .fold(1, |acc, (step, slope)| acc * trees_encountered(&tree_coords, *step, *slope));
 
     println!("{}", result);
