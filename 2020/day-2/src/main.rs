@@ -1,3 +1,6 @@
+#[macro_use] extern crate lazy_static;
+extern crate regex;
+
 use regex::Regex;
 use std::io;
 use std::io::prelude::*;
@@ -45,8 +48,10 @@ impl FromStr for CheckedPassword {
     type Err = ParseIntError;
 
     fn from_str(pwd: &str) -> Result<Self, Self::Err> {
-        let regex = Regex::new(r"(\d+)-(\d+) (\w): (\w+)").unwrap();
-        let caps = regex.captures(pwd).unwrap();
+        lazy_static! {
+            static ref RE: Regex = Regex::new(r"(\d+)-(\d+) (\w): (\w+)").unwrap();
+        }
+        let caps = RE.captures(pwd).unwrap();
 
         Ok(CheckedPassword {
             range_start: caps.get(1).unwrap().as_str().parse().unwrap(),
