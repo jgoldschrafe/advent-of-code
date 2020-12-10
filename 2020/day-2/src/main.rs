@@ -51,8 +51,8 @@ impl FromStr for CheckedPassword {
         lazy_static! {
             static ref RE: Regex = Regex::new(r"(\d+)-(\d+) (\w): (\w+)").unwrap();
         }
+        
         let caps = RE.captures(pwd).unwrap();
-
         Ok(CheckedPassword {
             range_start: caps.get(1).unwrap().as_str().parse().unwrap(),
             range_end: caps.get(2).unwrap().as_str().parse().unwrap(),
