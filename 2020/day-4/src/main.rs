@@ -26,8 +26,6 @@ struct Height {
 }
 
 #[derive(Debug, Clone)]
-//#[display(fmt = "byr:{} iyr:{} eyr:{} hgt:{} hcl:{} ecl:{} pid:{} cid:{}",
-//          byr, iyr, eyr, hgt, hcl, ecl, pid, cid)]
 struct Passport {
     byr: Option<i32>,
     iyr: Option<i32>,
@@ -165,24 +163,18 @@ impl FromStr for Passport {
             let key = kv_iter.next().unwrap();
             let value = kv_iter.next().unwrap().to_string();
             match &key[..] {
-                "byr" => {
-                    match value.parse() {
-                        Ok(byr) => passport.byr = Some(byr),
-                        Err(_) => return Err(ParseError),
-                    }
-                },
-                "iyr" => {
-                    match value.parse() {
-                        Ok(iyr) => passport.iyr = Some(iyr),
-                        Err(_) => return Err(ParseError),
-                    }
-                },
-                "eyr" => {
-                    match value.parse() {
-                        Ok(eyr) => passport.eyr = Some(eyr),
-                        Err(_) => return Err(ParseError),
-                    }
-                },
+                "byr" => passport.byr = Some(match value.parse() {
+                    Ok(byr) => byr,
+                    Err(_) => return Err(ParseError),
+                }),
+                "iyr" => passport.iyr = Some(match value.parse() {
+                    Ok(iyr) => iyr,
+                    Err(_) => return Err(ParseError),
+                }),
+                "eyr" => passport.eyr = Some(match value.parse() {
+                    Ok(eyr) => eyr,
+                    Err(_) => return Err(ParseError),
+                }),
                 "hgt" => {
                     passport.hgt = Some(Height{
                         unit: match &value[value.len() - 2..] {
