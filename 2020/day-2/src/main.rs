@@ -60,7 +60,7 @@ impl FromStr for CheckedPassword {
 fn main() {
     let passwords: Vec<CheckedPassword> = io::stdin().lock()
         .lines()
-        .map(|line| CheckedPassword::from_str(&line.unwrap()).unwrap())
+        .map(|line| line.unwrap().parse().unwrap())
         .collect();
 
     let num_valid_passwords: i32 = passwords.iter()
