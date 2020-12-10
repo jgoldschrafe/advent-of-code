@@ -2,4 +2,4 @@
 
 set -euo pipefail
 
-cargo run < input.txt
+RUST_BACKTRACE=1 cargo run < input.txt
