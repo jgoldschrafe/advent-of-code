@@ -2,24 +2,32 @@
 extern crate regex;
 
 use regex::Regex;
+use std::convert::From;
 use std::fmt::Debug;
 use std::io;
 use std::io::prelude::*;
+use std::num::ParseIntError;
 use std::str::FromStr;
 
 #[derive(Debug, Clone)]
 struct ParseError;
 
+impl From<ParseIntError> for ParseError {
+    fn from(_: ParseIntError) -> Self {
+        ParseError
+    }
+}
+
 #[derive(Debug, Clone)]
 struct ValidationError;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy)]
 enum HeightUnit {
     CENTIMETERS,
     INCHES,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy)]
 struct Height {
     unit: HeightUnit,
     value: i32,
@@ -52,49 +60,29 @@ impl Passport {
     }
 
     fn validate(&self) -> Result<(), ValidationError> {
-        // Birth year must be between 1920 and 2002, inclusive
-        match self.byr {
-            Some(byr) => Self::validate_in_range(1920, 2002, byr)?,
-            None => return Err(ValidationError),
+        let byr = self.byr.ok_or(ValidationError)?;
+        Self::validate_in_range(1920, 2002, byr)?;
+
+        let iyr = self.iyr.ok_or(ValidationError)?;
+        Self::validate_in_range(2010, 2020, iyr)?;
+
+        let eyr = self.eyr.ok_or(ValidationError)?;
+        Self::validate_in_range(2020, 2030, eyr)?;
+
+        let hgt = self.hgt.ok_or(ValidationError)?;
+        match hgt.unit {
+            HeightUnit::CENTIMETERS => Self::validate_in_range(150, 193, hgt.value)?,
+            HeightUnit::INCHES => Self::validate_in_range(59, 76, hgt.value)?,
         }
 
-        // Issue year must be between 2010 and 2020, inclusive
-        match self.iyr {
-            Some(iyr) => Self::validate_in_range(2010, 2020, iyr)?,
-            None => return Err(ValidationError),
-        }
+        let hcl = self.hcl.as_ref().ok_or(ValidationError)?;
+        Self::validate_hex_color(&hcl)?;
 
-        // Expiration year must be between 2020 and 2030, inclusive
-        match self.eyr {
-            Some(eyr) => Self::validate_in_range(2020, 2030, eyr)?,
-            None => return Err(ValidationError),
-        }
+        let ecl = self.ecl.as_ref().ok_or(ValidationError)?;
+        Self::validate_eye_color(&ecl)?;
 
-        // Height must be within valid range
-        match &self.hgt {
-            Some(hgt) => match hgt.unit {
-                HeightUnit::CENTIMETERS => Self::validate_in_range(150, 193, hgt.value)?,
-                HeightUnit::INCHES => Self::validate_in_range(59, 76, hgt.value)?,
-            },
-            None => return Err(ValidationError),
-        }
-
-        // Hair color must be HTML-type color
-        match &self.hcl {
-            Some(hcl) => Self::validate_hex_color(&hcl)?,
-            None => return Err(ValidationError),
-        }
-
-        // Eye color must belong to a list of acceptable values
-        match &self.ecl {
-            Some(ecl) => Self::validate_eye_color(&ecl)?,
-            None => return Err(ValidationError),
-        }
-
-        match &self.pid {
-            Some(pid) => Self::validate_pid(&pid)?,
-            None => return Err(ValidationError),
-        }
+        let pid = self.pid.as_ref().ok_or(ValidationError)?;
+        Self::validate_pid(&pid)?;
 
         Ok(())
     }
@@ -160,21 +148,12 @@ impl FromStr for Passport {
 
         for tok in input_str.split(&[' ', '\n'][..]) {
             let mut kv_iter = tok.split(":");
-            let key = kv_iter.next().unwrap();
-            let value = kv_iter.next().unwrap().to_string();
+            let key = kv_iter.next().ok_or(ParseError)?;
+            let value = kv_iter.next().ok_or(ParseError)?.to_string();
             match &key[..] {
-                "byr" => passport.byr = Some(match value.parse() {
-                    Ok(byr) => byr,
-                    Err(_) => return Err(ParseError),
-                }),
-                "iyr" => passport.iyr = Some(match value.parse() {
-                    Ok(iyr) => iyr,
-                    Err(_) => return Err(ParseError),
-                }),
-                "eyr" => passport.eyr = Some(match value.parse() {
-                    Ok(eyr) => eyr,
-                    Err(_) => return Err(ParseError),
-                }),
+                "byr" => passport.byr = Some(value.parse()?),
+                "iyr" => passport.iyr = Some(value.parse()?),
+                "eyr" => passport.eyr = Some(value.parse()?),
                 "hgt" => {
                     passport.hgt = Some(Height{
                         unit: match &value[value.len() - 2..] {
@@ -182,10 +161,7 @@ impl FromStr for Passport {
                             "in" => HeightUnit::INCHES,
                             _ => return Err(ParseError),
                         },
-                        value: match &value[..value.len() - 2].parse() {
-                            Ok(measurement) => *measurement,
-                            Err(_) => return Err(ParseError),
-                        }
+                        value: value[..value.len() - 2].parse()?,
                     });
                 },
                 "hcl" => passport.hcl = Some(value),
